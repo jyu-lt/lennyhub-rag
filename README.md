@@ -318,6 +318,22 @@ python setup_rag.py --parallel --workers 8
 - Fastest mode
 - Simple semantic search
 
+---
+
+## 🎓 Want to Build Your Own AI Agents?
+
+This RAG system demonstrates advanced agent engineering with knowledge graphs, vector databases, and LLM orchestration. Want to learn how to build systems like this from scratch?
+
+**Join the Agent Engineering Bootcamp: Developers Edition**
+- Learn to build production-ready AI agents
+- Master RAG, LLMs, and agentic workflows
+- Taught by Hamza Farooq (Ex-Google, Prof UCLA & UMN)
+- 4.8★ rating from 95+ students
+
+**[Get $200 OFF with code 200OFF →](https://maven.com/boring-bot/advanced-llm?promoCode=200OFF)**
+
+---
+
 ## 🏗️ Technical Stack
 
 - **RAG Framework**: [RAG-Anything](https://github.com/HKUDS/RAG-Anything) v1.2.9+
@@ -551,5 +567,22 @@ git clone https://github.com/traversaal-ai/lennyhub-rag.git
 cd lennyhub-rag
 python setup_rag.py --quick
 ```
+
+---
+
+## 🚀 Level Up Your AI Agent Skills
+
+Enjoyed building with this RAG system? Take your skills to the next level!
+
+**Agent Engineering Bootcamp: Developers Edition** teaches you to build production-ready AI agents like this one (and more advanced systems). Learn RAG pipelines, knowledge graphs, LLM orchestration, and agentic workflows from industry experts.
+
+**Taught by [Hamza Farooq](https://maven.com/boring-bot/advanced-llm?promoCode=200OFF)**
+- Ex-Google Engineer
+- Professor at UCLA & UMN
+- 4.8★ rating (95+ students)
+
+**[Enroll now with $200 OFF →](https://maven.com/boring-bot/advanced-llm?promoCode=200OFF)**
+
+---
 
 Built with ❤️ using RAG-Anything, LightRAG, Qdrant, and Streamlit
