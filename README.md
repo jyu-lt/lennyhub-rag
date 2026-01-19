@@ -6,6 +6,7 @@ A production-ready RAG (Retrieval-Augmented Generation) system built on transcri
 
 - **🚀 One-Command Setup**: Automated installation and indexing with `setup_rag.py`
 - **🎨 Visual Web Interface**: Beautiful Streamlit app for querying and exploration
+- **🕸️ Interactive Graph Viewer**: Explore 544 people and their connections with clickable network visualization
 - **🗄️ Qdrant Vector Database**: Production-grade local vector storage (no Docker needed)
 - **📊 Knowledge Graph RAG**: Advanced retrieval with LightRAG entity and relationship extraction
 - **🔍 Multiple Search Modes**: Hybrid, local, global, and naive search strategies
@@ -118,6 +119,42 @@ streamlit run streamlit_app.py
 - Real-time Qdrant status monitoring
 - Query timing and metadata
 - Transcript filtering and preview
+
+## 🕸️ Knowledge Graph Viewer
+
+Explore the network of people and their connections from Lenny's podcasts with an interactive graph visualization.
+
+![Knowledge Graph](assets/graph_screenshot.png)
+
+**Launch the Graph Viewer:**
+```bash
+python serve_graph.py
+```
+
+The graph will automatically open in your browser at `http://localhost:8000/graph_viewer_simple.html`
+
+**Features:**
+- 🎯 **Interactive Network**: 544 people with all names visible
+- 🌟 **Top Connectors Highlighted**: See the 5 most connected people
+  - Lenny Rachitsky (292 connections) - Gold
+  - Bob Moesta (98 connections) - Amber
+  - April Dunford (85 connections) - Orange
+  - Arielle Jackson (82 connections) - Deep Orange
+  - Andrew Wilkinson (78 connections) - Red
+- 🔍 **Smart Search**: Find people with exact match prioritization
+- 👆 **Clickable Legend**: Click any top connector to focus on them
+- 🖱️ **Interactive Controls**:
+  - Drag nodes to reposition
+  - Scroll to zoom in/out
+  - Click for detailed information
+  - Double-click to focus on a person
+- 🎨 **Beautiful Design**: Dark theme with Mona Sans font
+- ⚡ **Auto-Centers**: Graph starts focused on Lenny Rachitsky
+
+**What You'll Discover:**
+- Who are the most connected people in Lenny's podcast network
+- Relationships between guests, experts, and industry leaders
+- Connection patterns across 544 people from the transcripts
 
 ## 💻 Command Line Interface
 
