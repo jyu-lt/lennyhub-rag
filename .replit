@@ -33,6 +33,14 @@ outputType = "webview"
 localPort = 5000
 externalPort = 80
 
+[[ports]]
+localPort = 6333
+externalPort = 3001
+
+[[ports]]
+localPort = 6334
+externalPort = 3002
+
 [deployment]
 deploymentTarget = "autoscale"
 run = ["streamlit", "run", "streamlit_app.py", "--server.port=5000", "--server.address=0.0.0.0", "--server.headless=true"]
