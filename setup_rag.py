@@ -32,6 +32,12 @@ from datetime import datetime
 load_dotenv()
 
 
+def is_using_qdrant_cloud():
+    """Check if using Qdrant Cloud based on URL"""
+    url = os.getenv("QDRANT_URL", "")
+    return "cloud.qdrant.io" in url or "qdrant.io" in url
+
+
 def print_header(text):
     """Print a formatted header"""
     print("\n" + "=" * 70)
@@ -81,11 +87,20 @@ def install_qdrant():
 
 
 def is_qdrant_running():
-    """Check if Qdrant server is running"""
+    """Check if Qdrant server is running (local or cloud)"""
     try:
-        # Qdrant's root endpoint returns version info
-        response = requests.get("http://localhost:6333/", timeout=2)
-        return response.status_code == 200
+        from qdrant_client import QdrantClient
+        
+        url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        api_key = os.getenv("QDRANT_API_KEY")
+        
+        if is_using_qdrant_cloud() and api_key:
+            client = QdrantClient(url=url, api_key=api_key, timeout=10)
+        else:
+            client = QdrantClient(url=url, timeout=5)
+        
+        client.get_collections()
+        return True
     except:
         return False
 
@@ -209,7 +224,7 @@ async def process_single_transcript_parallel(rag, transcript_file, semaphore):
             return False, transcript_file.name
 
 
-async def build_rag_parallel(max_transcripts=None, workers=5):
+async def build_rag_parallel(max_transcripts=None, workers=5, force=False):
     """Build RAG system with parallel processing"""
     global total_to_process, processed_count
 
@@ -220,6 +235,7 @@ async def build_rag_parallel(max_transcripts=None, workers=5):
     import numpy as np
 
     start_time = datetime.now()
+    api_key = os.getenv("OPENAI_API_KEY")
 
     # Configure RAG system
     config = RAGAnythingConfig(
@@ -239,11 +255,12 @@ async def build_rag_parallel(max_transcripts=None, workers=5):
             prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
+            api_key=api_key,
             **kwargs
         )
 
     async def embedding_func(texts: list[str]) -> np.ndarray:
-        return await openai_embed(texts, model="text-embedding-3-small")
+        return await openai_embed(texts, model="text-embedding-3-small", api_key=api_key)
 
     # Get Qdrant configuration
     lightrag_kwargs = get_lightrag_kwargs(verbose=False)
@@ -268,9 +285,13 @@ async def build_rag_parallel(max_transcripts=None, workers=5):
     transcript_dir = Path("./data")
     all_files = sorted(list(transcript_dir.glob("*.txt")))
 
-    # Get already processed documents
-    already_processed = get_already_processed_docs()
-    print(f"Already processed: {len(already_processed)} transcripts")
+    # Get already processed documents (skip if force flag is set)
+    if force:
+        print("Force mode enabled - will re-index all transcripts")
+        already_processed = set()
+    else:
+        already_processed = get_already_processed_docs()
+        print(f"Already processed: {len(already_processed)} transcripts")
 
     # Filter out already processed
     transcript_files = []
@@ -288,6 +309,8 @@ async def build_rag_parallel(max_transcripts=None, workers=5):
     if total_to_process == 0:
         print("\n✓ All transcripts already processed!")
         print(f"Total documents in system: {len(already_processed)}")
+        if not force:
+            print("Hint: Use --force to re-index all transcripts")
         rag.close()
         return True
 
@@ -332,13 +355,15 @@ async def build_rag_parallel(max_transcripts=None, workers=5):
     return successful > 0
 
 
-async def build_rag(max_transcripts=None):
+async def build_rag(max_transcripts=None, force=False):
     """Build RAG system with sequential processing"""
     from raganything import RAGAnything, RAGAnythingConfig
     from lightrag.llm.openai import openai_complete_if_cache, openai_embed
     from lightrag.utils import EmbeddingFunc
     from qdrant_config import get_lightrag_kwargs
     import numpy as np
+
+    api_key = os.getenv("OPENAI_API_KEY")
 
     # Configure RAG system
     config = RAGAnythingConfig(
@@ -358,11 +383,12 @@ async def build_rag(max_transcripts=None):
             prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
+            api_key=api_key,
             **kwargs
         )
 
     async def embedding_func(texts: list[str]) -> np.ndarray:
-        return await openai_embed(texts, model="text-embedding-3-small")
+        return await openai_embed(texts, model="text-embedding-3-small", api_key=api_key)
 
     # Get Qdrant configuration
     lightrag_kwargs = get_lightrag_kwargs(verbose=False)
@@ -384,9 +410,13 @@ async def build_rag(max_transcripts=None):
     transcript_dir = Path("./data")
     all_files = sorted(list(transcript_dir.glob("*.txt")))
 
-    # Get already processed documents
-    already_processed = get_already_processed_docs()
-    print(f"Already processed: {len(already_processed)} transcripts")
+    # Get already processed documents (skip if force flag is set)
+    if force:
+        print("Force mode enabled - will re-index all transcripts")
+        already_processed = set()
+    else:
+        already_processed = get_already_processed_docs()
+        print(f"Already processed: {len(already_processed)} transcripts")
 
     # Filter out already processed
     transcript_files = []
@@ -403,6 +433,8 @@ async def build_rag(max_transcripts=None):
     if len(transcript_files) == 0:
         print("\n✓ All transcripts already processed!")
         print(f"Total documents in system: {len(already_processed)}")
+        if not force:
+            print("Hint: Use --force to re-index all transcripts")
         rag.close()
         return True
 
@@ -479,6 +511,11 @@ async def main():
         default=5,
         help="Number of concurrent workers for parallel mode (default: 5, max: 10)"
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-index all transcripts, ignoring local cache (useful when migrating to Qdrant Cloud)"
+    )
     args = parser.parse_args()
 
     # Determine max transcripts
@@ -497,31 +534,46 @@ async def main():
         args.workers = 1
 
     mode_text = "PARALLEL" if args.parallel else "SEQUENTIAL"
-    print_header(f"RAG-Anything Setup with Local Qdrant ({mode_text})")
+    qdrant_mode = "Qdrant Cloud" if is_using_qdrant_cloud() else "Local Qdrant"
+    print_header(f"RAG-Anything Setup with {qdrant_mode} ({mode_text})")
 
     if args.parallel:
         print(f"⚡ Parallel mode enabled with {args.workers} workers")
         print(f"   This is ~{args.workers}x faster than sequential mode!\n")
 
-    # Step 1: Check if Qdrant is installed
-    print_step(1, "Checking Qdrant Installation")
-    if not check_qdrant_installed():
-        print("Qdrant not found. Installing...")
-        if not install_qdrant():
-            print("\nSetup failed! Please install Qdrant manually:")
-            print("  ./install_qdrant_local.sh")
+    # Step 1: Check Qdrant (local install or cloud connection)
+    print_step(1, "Checking Qdrant Connection")
+    if is_using_qdrant_cloud():
+        print(f"Using Qdrant Cloud: {os.getenv('QDRANT_URL')}")
+        if not os.getenv("QDRANT_API_KEY"):
+            print("ERROR: QDRANT_API_KEY not set for Qdrant Cloud!")
+            return 1
+        if is_qdrant_running():
+            print("✓ Connected to Qdrant Cloud!")
+        else:
+            print("ERROR: Cannot connect to Qdrant Cloud!")
+            print("Please check your QDRANT_URL and QDRANT_API_KEY settings.")
             return 1
     else:
-        print("✓ Qdrant is already installed!")
+        if not check_qdrant_installed():
+            print("Qdrant not found. Installing...")
+            if not install_qdrant():
+                print("\nSetup failed! Please install Qdrant manually:")
+                print("  ./install_qdrant_local.sh")
+                return 1
+        else:
+            print("✓ Qdrant is already installed!")
 
     # Step 2: Check API key
     print_step(2, "Checking OpenAI API Key")
     if not check_api_key():
         return 1
 
-    # Step 3: Start Qdrant
+    # Step 3: Start Qdrant (only for local)
     print_step(3, "Starting Qdrant Server")
-    if is_qdrant_running():
+    if is_using_qdrant_cloud():
+        print("✓ Using Qdrant Cloud - no local server needed!")
+    elif is_qdrant_running():
         print("✓ Qdrant is already running!")
     else:
         if not start_qdrant():
@@ -538,9 +590,9 @@ async def main():
 
     try:
         if args.parallel:
-            success = await build_rag_parallel(max_transcripts=max_transcripts, workers=args.workers)
+            success = await build_rag_parallel(max_transcripts=max_transcripts, workers=args.workers, force=args.force)
         else:
-            success = await build_rag(max_transcripts=max_transcripts)
+            success = await build_rag(max_transcripts=max_transcripts, force=args.force)
 
         if not success:
             return 1
@@ -558,14 +610,19 @@ async def main():
     print('     python query_rag.py "Your question here"')
     print("     python query_rag.py --interactive\n")
     print("  2. Launch visual interface:")
-    print("     ./run_streamlit.sh\n")
+    print("     streamlit run streamlit_app.py\n")
     print("  3. Query with sources:")
     print('     python query_with_sources.py "Your question"\n')
-    print("  4. Check Qdrant status:")
-    print("     ./status_qdrant.sh")
-    print("     curl http://localhost:6333/\n")
-    print("  5. View dashboard:")
-    print("     http://localhost:6333/dashboard\n")
+    
+    if is_using_qdrant_cloud():
+        print("  4. View Qdrant Cloud dashboard:")
+        print("     https://cloud.qdrant.io\n")
+    else:
+        print("  4. Check Qdrant status:")
+        print("     ./status_qdrant.sh")
+        print("     curl http://localhost:6333/\n")
+        print("  5. View dashboard:")
+        print("     http://localhost:6333/dashboard\n")
 
     return 0
 

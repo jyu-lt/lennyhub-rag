@@ -482,5 +482,25 @@
     "create_time": 1768925248,
     "update_time": 1768925248,
     "_id": "hybrid:query:16b984031a6d3bcc53cecdb8d089ae06"
+  },
+  "hybrid:keywords:be16e1b4d308888dd9463056d59e1036": {
+    "return": "{\"high_level_keywords\": [\"Getting to PMF\", \"Product Market Fit\"], \"low_level_keywords\": [\"PMF\", \"Route\", \"Directions\", \"Navigation\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "how to get to pmf",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1768930515,
+    "update_time": 1768930515,
+    "_id": "hybrid:keywords:be16e1b4d308888dd9463056d59e1036"
   }
 }
