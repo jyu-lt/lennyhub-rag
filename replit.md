@@ -25,9 +25,16 @@ streamlit run streamlit_app.py
 
 ## Environment Variables
 - `OPENAI_API_KEY` - Required for RAG queries
-- `QDRANT_URL` - URL for Qdrant server (default: http://localhost:6333)
+- `QDRANT_URL` - URL for Qdrant server (default: http://localhost:6333, or Qdrant Cloud URL)
+- `QDRANT_API_KEY` - API key for Qdrant Cloud authentication (required for cloud)
 - `QDRANT_COLLECTION_NAME` - Qdrant collection name (default: lennyhub)
 - `USE_QDRANT` - Set to 'true' to use Qdrant
 
+## Qdrant Configuration
+The app supports both local Qdrant and Qdrant Cloud:
+- **Local**: Set `QDRANT_URL=http://localhost:6333` (default)
+- **Cloud**: Set `QDRANT_URL` to your cloud URL (e.g., `https://xxx.cloud.qdrant.io`) and `QDRANT_API_KEY` to your API key
+
 ## Recent Changes
+- January 20, 2026: Added Qdrant Cloud support with API key authentication
 - January 20, 2026: Configured for Replit environment with Streamlit on port 5000

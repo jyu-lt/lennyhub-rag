@@ -25,12 +25,18 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-def test_qdrant_connection(url: str) -> bool:
+def is_cloud_url(url: str) -> bool:
+    """Check if URL is a Qdrant Cloud URL"""
+    return url and ("cloud.qdrant.io" in url or "qdrant.io" in url)
+
+
+def test_qdrant_connection(url: str, api_key: str = None) -> bool:
     """
     Test if Qdrant server is accessible.
 
     Args:
-        url: Qdrant server URL (e.g., http://localhost:6333)
+        url: Qdrant server URL (e.g., http://localhost:6333 or https://xxx.cloud.qdrant.io)
+        api_key: API key for Qdrant Cloud authentication
 
     Returns:
         True if connection successful, False otherwise
@@ -38,8 +44,10 @@ def test_qdrant_connection(url: str) -> bool:
     try:
         from qdrant_client import QdrantClient
 
-        client = QdrantClient(url=url, timeout=5)
-        # Try to get collections (will fail if server not accessible)
+        if is_cloud_url(url) and api_key:
+            client = QdrantClient(url=url, api_key=api_key, timeout=10)
+        else:
+            client = QdrantClient(url=url, timeout=5)
         client.get_collections()
         return True
     except Exception as e:
@@ -50,6 +58,7 @@ def test_qdrant_connection(url: str) -> bool:
 def get_lightrag_kwargs(
     use_qdrant: Optional[bool] = None,
     qdrant_url: Optional[str] = None,
+    qdrant_api_key: Optional[str] = None,
     collection_name: Optional[str] = None,
     verbose: bool = True
 ) -> Dict[str, Any]:
@@ -59,6 +68,7 @@ def get_lightrag_kwargs(
     Args:
         use_qdrant: Override USE_QDRANT env var (True/False/None for auto)
         qdrant_url: Override QDRANT_URL env var
+        qdrant_api_key: Override QDRANT_API_KEY env var (for cloud)
         collection_name: Override QDRANT_COLLECTION_NAME env var
         verbose: Print configuration info
 
@@ -78,21 +88,29 @@ def get_lightrag_kwargs(
 
     # Get Qdrant settings
     url = qdrant_url or os.getenv("QDRANT_URL", "http://localhost:6333")
+    api_key = qdrant_api_key or os.getenv("QDRANT_API_KEY")
     collection = collection_name or os.getenv("QDRANT_COLLECTION_NAME", "lennyhub")
 
     # Test connection
-    if not test_qdrant_connection(url):
-        print(f"\n⚠️  Qdrant not accessible at {url}")
-        print("   Falling back to NanoVectorDB (default JSON storage)")
-        print("   To use Qdrant, ensure it's running:")
-        print("   - Run: ./start_qdrant.sh")
-        print("   - Or install first: ./install_qdrant_local.sh")
-        print("   - Or set USE_QDRANT=false in .env to disable this warning\n")
+    if not test_qdrant_connection(url, api_key):
+        if is_cloud_url(url):
+            print(f"\n⚠️  Cannot connect to Qdrant Cloud at {url}")
+            print("   Please check your QDRANT_URL and QDRANT_API_KEY settings\n")
+        else:
+            print(f"\n⚠️  Qdrant not accessible at {url}")
+            print("   Falling back to NanoVectorDB (default JSON storage)")
+            print("   To use Qdrant, ensure it's running:")
+            print("   - Run: ./start_qdrant.sh")
+            print("   - Or install first: ./install_qdrant_local.sh")
+            print("   - Or set USE_QDRANT=false in .env to disable this warning\n")
         return {}
 
     # Qdrant is available - use it
     if verbose:
-        print(f"✓ Using Qdrant vector database")
+        if is_cloud_url(url):
+            print(f"✓ Using Qdrant Cloud")
+        else:
+            print(f"✓ Using Qdrant vector database")
         print(f"  URL: {url}")
         print(f"  Collection: {collection}")
 
@@ -104,17 +122,23 @@ def get_lightrag_kwargs(
         }
     }
 
+    # Add API key for cloud connections
+    if api_key:
+        lightrag_kwargs["vector_db_storage_cls_kwargs"]["api_key"] = api_key
+
     return lightrag_kwargs
 
 
 def get_qdrant_client(
-    qdrant_url: Optional[str] = None
+    qdrant_url: Optional[str] = None,
+    qdrant_api_key: Optional[str] = None
 ) -> Optional[Any]:
     """
     Get a Qdrant client instance for direct access.
 
     Args:
         qdrant_url: Override QDRANT_URL env var
+        qdrant_api_key: Override QDRANT_API_KEY env var (for cloud)
 
     Returns:
         QdrantClient instance or None if unavailable
@@ -123,11 +147,15 @@ def get_qdrant_client(
         from qdrant_client import QdrantClient
 
         url = qdrant_url or os.getenv("QDRANT_URL", "http://localhost:6333")
+        api_key = qdrant_api_key or os.getenv("QDRANT_API_KEY")
 
-        if not test_qdrant_connection(url):
+        if not test_qdrant_connection(url, api_key):
             return None
 
-        return QdrantClient(url=url)
+        if is_cloud_url(url) and api_key:
+            return QdrantClient(url=url, api_key=api_key)
+        else:
+            return QdrantClient(url=url)
     except ImportError:
         print("Error: qdrant-client not installed. Run: pip install qdrant-client")
         return None

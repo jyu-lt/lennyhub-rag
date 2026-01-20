@@ -30,6 +30,12 @@ if not os.getenv("QDRANT_URL"):
 if not os.getenv("QDRANT_COLLECTION_NAME"):
     os.environ["QDRANT_COLLECTION_NAME"] = "lennyhub"
 
+
+def is_using_qdrant_cloud():
+    """Check if using Qdrant Cloud based on URL"""
+    url = os.getenv("QDRANT_URL", "")
+    return "cloud.qdrant.io" in url or "qdrant.io" in url
+
 # Page config
 st.set_page_config(
     page_title="LennyHub RAG Explorer",
@@ -211,27 +217,44 @@ def start_qdrant():
 def check_qdrant_status():
     """Check if Qdrant is running and get collections info"""
     try:
-        response = requests.get("http://localhost:6333/", timeout=2)
-        if response.status_code == 200:
-            version_info = response.json()
-
-            # Get collections
-            collections_response = requests.get("http://localhost:6333/collections", timeout=2)
-            collections = collections_response.json().get("result", {}).get("collections", [])
-
-            return {
-                "status": "running",
-                "version": version_info.get("version", "unknown"),
-                "collections": collections
-            }
-    except:
-        pass
-
-    return {
-        "status": "stopped",
-        "version": None,
-        "collections": []
-    }
+        from qdrant_client import QdrantClient
+        
+        url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        api_key = os.getenv("QDRANT_API_KEY")
+        
+        if is_using_qdrant_cloud() and api_key:
+            client = QdrantClient(url=url, api_key=api_key, timeout=10)
+        else:
+            client = QdrantClient(url=url, timeout=5)
+        
+        # Get collections
+        collections_result = client.get_collections()
+        collections = [{"name": c.name} for c in collections_result.collections]
+        
+        # Get version info
+        version = "Cloud" if is_using_qdrant_cloud() else "Local"
+        try:
+            if not is_using_qdrant_cloud():
+                response = requests.get(f"{url}/", timeout=2)
+                if response.status_code == 200:
+                    version = response.json().get("version", "unknown")
+        except:
+            pass
+        
+        return {
+            "status": "running",
+            "version": version,
+            "collections": collections,
+            "is_cloud": is_using_qdrant_cloud()
+        }
+    except Exception as e:
+        return {
+            "status": "stopped",
+            "version": None,
+            "collections": [],
+            "is_cloud": is_using_qdrant_cloud(),
+            "error": str(e)
+        }
 
 
 def create_rag_instance():
@@ -364,19 +387,26 @@ def main():
     st.markdown('<div class="sub-header">Query and explore podcast transcripts with AI-powered search</div>', unsafe_allow_html=True)
 
     # Check and start Qdrant if needed (only once per session)
+    # Skip local startup for Qdrant Cloud
     if "qdrant_started" not in st.session_state:
         qdrant_status = check_qdrant_status()
         if qdrant_status["status"] != "running":
-            with st.spinner("Starting Qdrant..."):
-                success, message = start_qdrant()
-                if success:
-                    st.session_state.qdrant_started = True
-                    # Clear cache to refresh status
-                    check_qdrant_status.clear()
-                    st.rerun()
-                else:
-                    st.session_state.qdrant_started = False
-                    st.session_state.qdrant_error = message
+            if is_using_qdrant_cloud():
+                # Cloud Qdrant - don't try to start locally
+                st.session_state.qdrant_started = False
+                st.session_state.qdrant_error = qdrant_status.get("error", "Cannot connect to Qdrant Cloud")
+            else:
+                # Local Qdrant - try to start it
+                with st.spinner("Starting Qdrant..."):
+                    success, message = start_qdrant()
+                    if success:
+                        st.session_state.qdrant_started = True
+                        # Clear cache to refresh status
+                        check_qdrant_status.clear()
+                        st.rerun()
+                    else:
+                        st.session_state.qdrant_started = False
+                        st.session_state.qdrant_error = message
         else:
             st.session_state.qdrant_started = True
 
@@ -388,9 +418,10 @@ def main():
         qdrant_status = check_qdrant_status()
 
         if qdrant_status["status"] == "running":
+            qdrant_type = "Cloud" if qdrant_status.get("is_cloud") else "Running"
             st.markdown(f"""
             <div class="status-box status-success">
-                ✓ Qdrant: Running<br>
+                ✓ Qdrant: {qdrant_type}<br>
                 Version: {qdrant_status["version"]}<br>
                 Collections: {len(qdrant_status["collections"])}
             </div>
@@ -406,10 +437,12 @@ def main():
             error_msg = ""
             if hasattr(st.session_state, 'qdrant_error'):
                 error_msg = f"<br>Error: {st.session_state.qdrant_error}"
+            
+            if is_using_qdrant_cloud():
                 st.markdown(f"""
                 <div class="status-box status-error">
-                    ✗ Qdrant: Not Running{error_msg}<br>
-                    Please ensure Qdrant is installed and qdrant_config.yaml exists.
+                    ✗ Qdrant Cloud: Not Connected{error_msg}<br>
+                    Please check QDRANT_URL and QDRANT_API_KEY settings.
                 </div>
                 """, unsafe_allow_html=True)
             else:
@@ -441,7 +474,10 @@ def main():
         # Links
         st.markdown("---")
         st.subheader("🔗 Quick Links")
-        st.markdown("[Qdrant Dashboard](http://localhost:6333/dashboard)")
+        if is_using_qdrant_cloud():
+            st.markdown("[Qdrant Cloud Dashboard](https://cloud.qdrant.io)")
+        else:
+            st.markdown("[Qdrant Dashboard](http://localhost:6333/dashboard)")
         st.markdown("[GitHub](https://github.com)")
 
         # Query mode selector
@@ -496,7 +532,10 @@ def main():
         # Process query
         if search_button and question:
             if qdrant_status["status"] != "running":
-                st.error("⚠️ Qdrant is not running. Please start it first: `./start_qdrant.sh`")
+                if is_using_qdrant_cloud():
+                    st.error("⚠️ Cannot connect to Qdrant Cloud. Please check your QDRANT_URL and QDRANT_API_KEY settings.")
+                else:
+                    st.error("⚠️ Qdrant is not running. Please start it first: `./start_qdrant.sh`")
             elif not os.getenv("OPENAI_API_KEY"):
                 st.error("⚠️ OpenAI API key is not configured. Please set it in the .env file.")
             else:
