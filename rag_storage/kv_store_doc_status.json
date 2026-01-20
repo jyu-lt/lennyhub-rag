@@ -1394,11 +1394,11 @@
     "content_summary": "Annie Duke (00:00:00):\nIt's so incredibly necessary in improving decision quality to take what's implicit and make it explicit. It's not that intuition is crap, your intuition is sometimes right. If you don't make it explicit, then you don't get to f...",
     "content_length": 80351,
     "created_at": "2026-01-15T10:12:47.276839+00:00",
-    "updated_at": "2026-01-15T10:33:11.095675+00:00",
+    "updated_at": "2026-01-20T17:48:35.481854+00:00",
     "file_path": "Annie Duke.txt",
     "track_id": "insert_20260115_151247_10fdd16f",
     "metadata": {
-      "processing_start_time": 1768473191
+      "processing_start_time": 1768931315
     }
   },
   "transcript-Annie Pearl": {
@@ -1425,11 +1425,11 @@
     "content_summary": "Annie Pearl (00:00:00):\nStrategy is really just an integrated set of choices that outline how you're going to win in whatever marketplace you choose. And so, a good product strategy is going to answer questions like what's your winning aspiration? Bu...",
     "content_length": 74031,
     "created_at": "2026-01-15T10:12:47.322320+00:00",
-    "updated_at": "2026-01-15T10:34:29.670279+00:00",
+    "updated_at": "2026-01-20T17:48:35.482542+00:00",
     "file_path": "Annie Pearl.txt",
     "track_id": "insert_20260115_151247_85826418",
     "metadata": {
-      "processing_start_time": 1768473269
+      "processing_start_time": 1768931315
     }
   },
   "transcript-Anton Osika": {
@@ -2377,5 +2377,15 @@
     "track_id": "insert_20260115_151251_ec5c2683",
     "chunks_list": [],
     "multimodal_processed": true
+  },
+  "doc-0e05c1de51934492d8f5fe521be106be": {
+    "status": "pending",
+    "content_summary": "Ada Chen Rekhi (00:00:00):\nIt's a terrible outcome to wake up one day and be late career and feel trapped because you have a certain lifestyle or a certain expectations of the people around you that you have to go work this job, but then you look at ...",
+    "content_length": 86187,
+    "created_at": "2026-01-20T17:48:35.175498+00:00",
+    "updated_at": "2026-01-20T17:48:35.175520+00:00",
+    "file_path": "unknown_source",
+    "track_id": "insert_20260120_174835_97485de8",
+    "chunks_list": []
   }
 }

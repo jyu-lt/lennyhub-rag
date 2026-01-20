@@ -502,5 +502,25 @@
     "create_time": 1768930515,
     "update_time": 1768930515,
     "_id": "hybrid:keywords:be16e1b4d308888dd9463056d59e1036"
+  },
+  "hybrid:keywords:907ffbcd5c6461e39e9ca60ab3486c3e": {
+    "return": "{\"high_level_keywords\": [\"SME program\", \"Small and Medium Enterprises\", \"Business support programs\"], \"low_level_keywords\": [\"Funding\", \"Training\", \"Resources\", \"Entrepreneurship\", \"Business development\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "what is an SME program?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1768931370,
+    "update_time": 1768931370,
+    "_id": "hybrid:keywords:907ffbcd5c6461e39e9ca60ab3486c3e"
   }
 }

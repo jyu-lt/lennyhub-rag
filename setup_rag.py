@@ -191,25 +191,13 @@ async def process_single_transcript_parallel(rag, transcript_file, semaphore):
     global processed_count
 
     async with semaphore:  # Limit concurrent processing
-        doc_id = f"transcript-{transcript_file.stem}"
-
         try:
             # Read transcript content
             with open(transcript_file, 'r', encoding='utf-8') as f:
                 content = f.read()
 
-            # Insert into RAG system
-            content_list = [{
-                "type": "text",
-                "text": content,
-                "page_idx": 0
-            }]
-
-            await rag.insert_content_list(
-                content_list=content_list,
-                file_path=str(transcript_file),
-                doc_id=doc_id
-            )
+            # Insert into RAG system using LightRAG directly
+            await rag.ainsert(content)
 
             # Update progress counter
             async with lock:
@@ -228,7 +216,7 @@ async def build_rag_parallel(max_transcripts=None, workers=5, force=False):
     """Build RAG system with parallel processing"""
     global total_to_process, processed_count
 
-    from raganything import RAGAnything, RAGAnythingConfig
+    from lightrag import LightRAG
     from lightrag.llm.openai import openai_complete_if_cache, openai_embed
     from lightrag.utils import EmbeddingFunc
     from qdrant_config import get_lightrag_kwargs
@@ -236,15 +224,6 @@ async def build_rag_parallel(max_transcripts=None, workers=5, force=False):
 
     start_time = datetime.now()
     api_key = os.getenv("OPENAI_API_KEY")
-
-    # Configure RAG system
-    config = RAGAnythingConfig(
-        working_dir="./rag_storage",
-        parser="mineru",
-        enable_image_processing=False,
-        enable_table_processing=False,
-        enable_equation_processing=False,
-    )
 
     # Set up LLM and embedding functions
     print("Setting up LLM and embedding functions...")
@@ -265,21 +244,21 @@ async def build_rag_parallel(max_transcripts=None, workers=5, force=False):
     # Get Qdrant configuration
     lightrag_kwargs = get_lightrag_kwargs(verbose=False)
 
-    # Initialize RAG system
+    # Initialize RAG system using LightRAG directly
     print("Initializing RAG system...")
-    rag = RAGAnything(
-        config=config,
+    rag = LightRAG(
+        working_dir="./rag_storage",
         llm_model_func=llm_model_func,
         embedding_func=EmbeddingFunc(
             embedding_dim=1536,
             max_token_size=8192,
             func=embedding_func
         ),
-        lightrag_kwargs=lightrag_kwargs
+        **lightrag_kwargs
     )
 
-    # Ensure LightRAG is initialized
-    await rag._ensure_lightrag_initialized()
+    # Initialize storages (required for lightrag-hku)
+    await rag.initialize_storages()
 
     # Get all transcript files
     transcript_dir = Path("./data")
@@ -349,30 +328,28 @@ async def build_rag_parallel(max_transcripts=None, workers=5, force=False):
     print(f"Total documents in system: {len(already_processed) + successful}")
     print("=" * 70)
 
-    # Close RAG system
-    rag.close()
+    # Cleanup
+    try:
+        await rag.finalize_storages()
+    except:
+        pass
+    try:
+        rag.close()
+    except:
+        pass
 
     return successful > 0
 
 
 async def build_rag(max_transcripts=None, force=False):
     """Build RAG system with sequential processing"""
-    from raganything import RAGAnything, RAGAnythingConfig
+    from lightrag import LightRAG
     from lightrag.llm.openai import openai_complete_if_cache, openai_embed
     from lightrag.utils import EmbeddingFunc
     from qdrant_config import get_lightrag_kwargs
     import numpy as np
 
     api_key = os.getenv("OPENAI_API_KEY")
-
-    # Configure RAG system
-    config = RAGAnythingConfig(
-        working_dir="./rag_storage",
-        parser="mineru",
-        enable_image_processing=False,
-        enable_table_processing=False,
-        enable_equation_processing=False,
-    )
 
     # Set up LLM and embedding functions
     print("Setting up LLM and embedding functions...")
@@ -393,18 +370,21 @@ async def build_rag(max_transcripts=None, force=False):
     # Get Qdrant configuration
     lightrag_kwargs = get_lightrag_kwargs(verbose=False)
 
-    # Initialize RAG system
+    # Initialize RAG system using LightRAG directly
     print("Initializing RAG system...")
-    rag = RAGAnything(
-        config=config,
+    rag = LightRAG(
+        working_dir="./rag_storage",
         llm_model_func=llm_model_func,
         embedding_func=EmbeddingFunc(
             embedding_dim=1536,
             max_token_size=8192,
             func=embedding_func
         ),
-        lightrag_kwargs=lightrag_kwargs
+        **lightrag_kwargs
     )
+    
+    # Initialize storages (required for lightrag-hku)
+    await rag.initialize_storages()
 
     # Get transcript files
     transcript_dir = Path("./data")
@@ -438,9 +418,6 @@ async def build_rag(max_transcripts=None, force=False):
         rag.close()
         return True
 
-    # Ensure LightRAG is initialized
-    await rag._ensure_lightrag_initialized()
-
     # Process each transcript sequentially
     print("\nProcessing transcripts sequentially...")
     for i, transcript_file in enumerate(transcript_files, 1):
@@ -450,18 +427,8 @@ async def build_rag(max_transcripts=None, force=False):
         with open(transcript_file, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Insert into RAG system
-        content_list = [{
-            "type": "text",
-            "text": content,
-            "page_idx": 0
-        }]
-
-        await rag.insert_content_list(
-            content_list=content_list,
-            file_path=str(transcript_file),
-            doc_id=f"transcript-{transcript_file.stem}"
-        )
+        # Insert into RAG system using LightRAG directly
+        await rag.ainsert(content)
         print(f"✓ Successfully indexed!")
 
     print_header("RAG System Built Successfully!")
@@ -472,17 +439,25 @@ async def build_rag(max_transcripts=None, force=False):
     print("-" * 70 + "\n")
 
     try:
+        from lightrag import QueryParam
         response = await rag.aquery(
             "What is a curiosity loop and how does it work?",
-            mode="hybrid"
+            param=QueryParam(mode="hybrid")
         )
         print("Answer:")
         print(response)
     except Exception as e:
         print(f"Warning: Test query failed: {e}")
 
-    # Close RAG system
-    rag.close()
+    # Cleanup
+    try:
+        await rag.finalize_storages()
+    except:
+        pass
+    try:
+        rag.close()
+    except:
+        pass
 
     return True
 
