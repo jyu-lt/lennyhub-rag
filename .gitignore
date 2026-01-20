@@ -1,6 +1,10 @@
 # Environment variables
 .env
 
+# Replit
+.pythonlibs/
+.upm/
+
 # Python
 __pycache__/
 *.py[cod]
