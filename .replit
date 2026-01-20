@@ -44,4 +44,3 @@ externalPort = 3002
 [deployment]
 deploymentTarget = "autoscale"
 run = ["streamlit", "run", "streamlit_app.py", "--server.port=5000", "--server.address=0.0.0.0", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
-build = ["sh", "-c", "./install_qdrant_local.sh &&  ./start_qdrant.sh"]
