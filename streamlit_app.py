@@ -386,27 +386,13 @@ def main():
     st.markdown('<div class="main-header">🎙️ LennyHub RAG Explorer</div>', unsafe_allow_html=True)
     st.markdown('<div class="sub-header">Query and explore podcast transcripts with AI-powered search</div>', unsafe_allow_html=True)
 
-    # Check and start Qdrant if needed (only once per session)
-    # Skip local startup for Qdrant Cloud
+    # Check Qdrant status (only once per session)
+    # In production/deployment, never try to start local Qdrant
     if "qdrant_started" not in st.session_state:
         qdrant_status = check_qdrant_status()
         if qdrant_status["status"] != "running":
-            if is_using_qdrant_cloud():
-                # Cloud Qdrant - don't try to start locally
-                st.session_state.qdrant_started = False
-                st.session_state.qdrant_error = qdrant_status.get("error", "Cannot connect to Qdrant Cloud")
-            else:
-                # Local Qdrant - try to start it
-                with st.spinner("Starting Qdrant..."):
-                    success, message = start_qdrant()
-                    if success:
-                        st.session_state.qdrant_started = True
-                        # Clear cache to refresh status
-                        check_qdrant_status.clear()
-                        st.rerun()
-                    else:
-                        st.session_state.qdrant_started = False
-                        st.session_state.qdrant_error = message
+            st.session_state.qdrant_started = False
+            st.session_state.qdrant_error = qdrant_status.get("error", "Cannot connect to Qdrant")
         else:
             st.session_state.qdrant_started = True
 
