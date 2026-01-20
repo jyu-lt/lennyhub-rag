@@ -242,6 +242,8 @@ def create_rag_instance():
     from qdrant_config import get_lightrag_kwargs
     import numpy as np
 
+    api_key = os.getenv("OPENAI_API_KEY")
+
     config = RAGAnythingConfig(
         working_dir="./rag_storage",
         parser="mineru",
@@ -256,11 +258,12 @@ def create_rag_instance():
             prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
+            api_key=api_key,
             **kwargs
         )
 
     async def embedding_func(texts: list[str]) -> np.ndarray:
-        return await openai_embed(texts, model="text-embedding-3-small")
+        return await openai_embed(texts, model="text-embedding-3-small", api_key=api_key)
 
     lightrag_kwargs = get_lightrag_kwargs(verbose=False)
 

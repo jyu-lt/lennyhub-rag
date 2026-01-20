@@ -250,5 +250,47 @@
     "create_time": 1768807227,
     "update_time": 1768807227,
     "_id": "hybrid:query:7cb3e8693a5e3d2c9131b0e3f2c40ceb"
+  },
+  "hybrid:keywords:9c6858e20bdfa6facd638a57a28899af": {
+    "return": "{\"high_level_keywords\": [\"Product-market fit\", \"Market strategy\", \"Business development\"], \"low_level_keywords\": [\"Target market\", \"Customer needs\", \"Value proposition\", \"Startup success\", \"Product development\"]}",
+    "cache_type": "keywords",
+    "chunk_id": null,
+    "original_prompt": "What is product-market fit?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1768923127,
+    "update_time": 1768923127,
+    "_id": "hybrid:keywords:9c6858e20bdfa6facd638a57a28899af"
+  },
+  "hybrid:query:c6bbc5cc72f5846c98ad3a41496e502a": {
+    "return": "**Product-Market Fit: An Overview**\n\nProduct-Market Fit (PMF) refers to the alignment between a product's offerings and the needs and preferences of its target market. It plays a crucial role in determining the success of a company, especially in the context of startups and new product development.\n\n### Key Aspects of Product-Market Fit:\n\n- **Alignment with Customer Needs**: PMF is achieved when the product meets a strong demand from the market, indicating that the product's features resonate with customer expectations and address their pain points effectively. \n\n- **Continuous Adaptation**: Achieving PMF is not a one-time event; it requires ongoing attention and adaptation to changes in consumer behavior, market dynamics, and competitive pressures. Companies must continuously refine their offerings to maintain this alignment.\n\n- **Importance in Startups**: For startups, achieving PMF is often viewed as a critical milestone. It signals that the product is not only viable but that there is a market that is ready to adopt and sustain it. Without PMF, startups may struggle to attract users and secure investments.\n\n- **Indicators of Success**: Signs that a startup has reached PMF include positive user feedback, strong retention rates, word-of-mouth referrals, and a growing user base. Conversely, a lack of PMF can result in low adoption rates and high churn.\n\n### Conclusion\n\nIn summary, Product-Market Fit is essential for the growth and sustainability of a product within its target market. A clear focus on understanding customer needs and adapting to market changes is vital for achieving and maintaining PMF.\n\n### References\n\n- [1] Howie Liu.txt\n- [3] Jake Knapp + John Zeratsky 2.0.txt\n- [4] Elena Verna 4.0.txt\n- [5] Ryan Hoover.txt",
+    "cache_type": "query",
+    "chunk_id": null,
+    "original_prompt": "What is product-market fit?",
+    "queryparam": {
+      "mode": "hybrid",
+      "response_type": "Multiple Paragraphs",
+      "top_k": 40,
+      "chunk_top_k": 20,
+      "max_entity_tokens": 6000,
+      "max_relation_tokens": 8000,
+      "max_total_tokens": 30000,
+      "hl_keywords": "Product-market fit, Market strategy, Business development",
+      "ll_keywords": "Target market, Customer needs, Value proposition, Startup success, Product development",
+      "user_prompt": "",
+      "enable_rerank": true
+    },
+    "create_time": 1768923143,
+    "update_time": 1768923143,
+    "_id": "hybrid:query:c6bbc5cc72f5846c98ad3a41496e502a"
   }
 }

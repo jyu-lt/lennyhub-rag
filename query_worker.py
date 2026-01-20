@@ -19,19 +19,12 @@ load_dotenv()
 async def run_query(question: str, mode: str = "hybrid") -> dict:
     """Run a RAG query and return the result"""
     try:
-        from raganything import RAGAnything, RAGAnythingConfig
         from lightrag.llm.openai import openai_complete_if_cache, openai_embed
         from lightrag.utils import EmbeddingFunc
         from qdrant_config import get_lightrag_kwargs
         import numpy as np
 
-        config = RAGAnythingConfig(
-            working_dir="./rag_storage",
-            parser="mineru",
-            enable_image_processing=False,
-            enable_table_processing=False,
-            enable_equation_processing=False,
-        )
+        api_key = os.getenv("OPENAI_API_KEY")
 
         async def llm_model_func(prompt, system_prompt=None, history_messages=[], **kwargs):
             return await openai_complete_if_cache(
@@ -39,28 +32,31 @@ async def run_query(question: str, mode: str = "hybrid") -> dict:
                 prompt,
                 system_prompt=system_prompt,
                 history_messages=history_messages,
+                api_key=api_key,
                 **kwargs
             )
 
         async def embedding_func(texts: list[str]) -> np.ndarray:
-            return await openai_embed(texts, model="text-embedding-3-small")
+            return await openai_embed(texts, model="text-embedding-3-small", api_key=api_key)
 
         lightrag_kwargs = get_lightrag_kwargs(verbose=False)
 
-        rag = RAGAnything(
-            config=config,
+        from lightrag import LightRAG, QueryParam
+        
+        rag = LightRAG(
+            working_dir="./rag_storage",
             llm_model_func=llm_model_func,
             embedding_func=EmbeddingFunc(
                 embedding_dim=1536,
                 max_token_size=8192,
                 func=embedding_func
             ),
-            lightrag_kwargs=lightrag_kwargs
+            **lightrag_kwargs
         )
 
-        # Initialize and query
-        await rag._ensure_lightrag_initialized()
-        response = await rag.aquery(question, mode=mode)
+        # Initialize storages before querying
+        await rag.initialize_storages()
+        response = await rag.aquery(question, param=QueryParam(mode=mode))
         
         # Cleanup
         try:
